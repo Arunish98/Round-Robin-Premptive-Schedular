@@ -43,6 +43,9 @@ void ToFinalQueue( std::multimap<int,process, std::greater <int> > &process_queu
         {
             final_queue.push_back(ptr->second);
             ptr->second.IsCompleted = true;
+            ptr->second.priority = 0;
+            process_queue.erase(ptr);
+            break;
         }
     }
 }
@@ -125,11 +128,11 @@ void print(std::multimap<int,process, std::greater <int> > &tempQ)
 {
     std::cout<<" process queue  "<<std::endl;
     std::multimap<int,process> :: iterator ptr;
-    std::cout<<"Remaining Time\t"<<" Waiting Time"<<std::endl;
+    std::cout<<"process no\t"<<"Remaining Time\t"<<" Waiting Time\t"<<"in queue\t"<<"priror\t"<<std::endl;
 	for(ptr = tempQ.begin(); ptr != tempQ.end(); ptr++)
     {
     	
-        std::cout<<" \t"<<ptr->second.process_no<<"\t"<<ptr->second.Remaining_Time<<" \t" <<ptr->second.Waiting_Time<<" \t" <<ptr->second.InProcessQueue<<std::endl;
+        std::cout<<" \t"<<ptr->second.process_no<<"\t"<<ptr->second.Remaining_Time<<" \t" <<ptr->second.Waiting_Time<<" \t" <<ptr->second.InProcessQueue<<"\t"<<ptr->second.priority<<std::endl;
     }
 }
 
@@ -158,11 +161,10 @@ int main()
 
     for(int i=0;i<NUM;i++)
     {
-        printf("\n Enter the burst time and arrival time of process[%d] ",i+1);
-        scanf("%d %d",&p[i].Burst_Time,&p[i].arrivalTime);
+        printf("\n Enter the burst time and arrival time and priority of process[%d] ",i+1);
+        scanf("%d %d %d",&p[i].Burst_Time,&p[i].arrivalTime,&p[i].priority);
         p[i].Remaining_Time = p[i].Burst_Time;
         p[i].Waiting_Time = 0;
-        p[i].priority = 0;
         p[i].process_no = i+1;
         ready_queue.push_back(p[i]);
     }
@@ -180,5 +182,5 @@ int main()
 		/*char c;
         std::cin>>c;*/
     } while (final_queue.size() != NUM);
+    print(final_queue);
 }
-
