@@ -1,161 +1,184 @@
 #include<stdio.h>
+#include<vector>
 #include<map>
 #include<iterator>
-#include<vector>
 #include<functional>
 #include<iostream>
 
-int time = 0;
-int num,quantum;
+
+int TIME = 0;
+int NUM,QUANTUM;
 struct process
 {
+    int process_no;
     int Burst_Time;
     int Turnaround_Time;
     int  Waiting_Time;
     int Remaining_Time;
     int arrivalTime;
     int priority;
-    bool inProcessQueue = false;
+    bool InProcessQueue = false;
+    bool IsCompleted = false;
 };
 
-void checkProcess(std::multimap<int,process, std::greater <int> > &tempQ)
+
+void ToprocessQueue( std::multimap<int,process, std::greater <int> > &process_queue, std::vector<process> &ready_queue)
+{
+    std::vector<process> :: iterator ptr;
+    for(ptr = ready_queue.begin(); ptr != ready_queue.end(); ptr++)
+    {
+        if(ptr->arrivalTime <= TIME && ptr->InProcessQueue == false)
+        {
+            process_queue.insert(std::pair<int,process>(ptr->priority,*ptr));
+            ptr->InProcessQueue = true;
+        }
+    }
+}
+void ToFinalQueue( std::multimap<int,process, std::greater <int> > &process_queue, std::vector<process> &final_queue)
 {
     std::multimap<int,process> :: iterator ptr;
-    for(ptr = tempQ.begin(); ptr != tempQ.end(); ptr++)
+    for(ptr = process_queue.begin(); ptr != process_queue.end(); ptr++)
     {
-        if((ptr->second.arrivalTime <= time) && (ptr->second.inProcessQueue == false) && (ptr->second.Remaining_Time != 0))
+        if(ptr->second.Remaining_Time == 0 && ptr->second.IsCompleted == false)
         {
-            ptr->second.inProcessQueue = true;
-        }
-        else if(ptr->second.Remaining_Time == 0)
-        {
-            ptr->second.inProcessQueue = false;
+            final_queue.push_back(ptr->second);
+            ptr->second.IsCompleted = true;
         }
     }
 }
 
 
+void RoundRobin_Schedular(std::multimap<int,process, std::greater <int> > &process_queue,std::vector<process> &ready_queue,std::vector<process> &final_queue)
+{
+    if(process_queue.empty())
+    {
+        TIME++;
+        ToprocessQueue(process_queue,ready_queue);
+    }
+    else
+    {
+        std::multimap<int,process> :: iterator ptr;
+        ptr = process_queue.begin();
+        {
+            if(ptr->second.Remaining_Time > QUANTUM)
+            {
+                std::multimap<int,process> :: iterator ptr1;
+                for(int i=0;i<QUANTUM;i++)
+                {
+                    for(ptr1 = process_queue.begin(); ptr1 != process_queue.end(); ++ptr1)
+                    {
+                        if(ptr1 != ptr && ptr1->second.IsCompleted == false)
+                        {
+                            ptr1->second.Waiting_Time += 1;                      
+                        }
+                        else if(ptr == ptr1)
+                        {
+                            ptr->second.Remaining_Time -= 1;
+                           
+                        }
+                    }
+                    TIME++;
+                    
+                    ToprocessQueue(process_queue,ready_queue);
+                }
+                
+                process_queue.erase(ptr);
+            	process_queue.insert(std::pair<int ,process>(ptr->first,ptr->second));
+            }
+            else if(ptr->second.Remaining_Time == 0)
+            {
+                process_queue.erase(ptr);
+                process_queue.insert(std::pair<int ,process>(ptr->first,ptr->second)); 
+            }
+            else
+            {
+                std::multimap<int ,process> ::iterator ptr1;
+                for(int i=0;i<ptr->second.Remaining_Time;i++)
+                {
+                    for(ptr1 = process_queue.begin(); (ptr1 != process_queue.end()); ptr1++)
+                    {
+                        if(ptr1 != ptr && ptr1->second.IsCompleted == false)
+                        {
+                            ptr1->second.Waiting_Time += 1;                      
+                        }
+                        else if(ptr == ptr1)
+                        {
+                    		continue;
+                        }
+                    }
+                    TIME++;
+                    ToprocessQueue(process_queue,ready_queue);
+                    
+                }               
+                ptr->second.Remaining_Time = 0;
+                process_queue.erase(ptr);
+                process_queue.insert(std::pair<int ,process>(ptr->first,ptr->second));
+            }
+        
+        }
+    
+    }
+
+}
+
 void print(std::multimap<int,process, std::greater <int> > &tempQ)
 {
+    std::cout<<" process queue  "<<std::endl;
     std::multimap<int,process> :: iterator ptr;
     std::cout<<"Remaining Time\t"<<" Waiting Time"<<std::endl;
 	for(ptr = tempQ.begin(); ptr != tempQ.end(); ptr++)
     {
     	
-        std::cout<<ptr->second.Remaining_Time<<" \t" <<ptr->second.Waiting_Time<<std::endl;
+        std::cout<<" \t"<<ptr->second.process_no<<"\t"<<ptr->second.Remaining_Time<<" \t" <<ptr->second.Waiting_Time<<" \t" <<ptr->second.InProcessQueue<<std::endl;
     }
 }
 
-
-void RoundRobin_Schedular(std::multimap<int,process, std::greater <int> > &tempQ)
+void print(std::vector<process> &tempQ)
 {
-    //std::multimap<int,process, std::greater <int> > tempQ1;
-    //tempQ.swap(tempQ1);
-    std::multimap<int,process> :: iterator ptr;
-    int count = 0;
-    for(ptr = tempQ.begin();ptr != tempQ.end(); ptr++)
+    std::cout<<" ready queue or final "<<std::endl;
+    std::vector<process> :: iterator ptr;
+    std::cout<<"Remaining Time\t"<<" Waiting Time"<<std::endl;
+	for(ptr = tempQ.begin(); ptr != tempQ.end(); ptr++)
     {
     	
-        if(ptr->second.inProcessQueue == true)
-        {        
-            if(ptr->second.Remaining_Time >= quantum)
-            {
-                ptr->second.Remaining_Time -= quantum;
-                std::multimap<int,process> :: iterator ptr1;
-                for(ptr1 = tempQ.begin(); (ptr1 != tempQ.end()); ptr1++)
-                {
-                    if(ptr1 != ptr)
-                    {
-                        if(ptr1->second.inProcessQueue == true)
-                        {
-                            ptr1->second.Waiting_Time += quantum;
-                            time += quantum;
-                        }
-                    
-                        checkProcess(tempQ);
-                    }
-                }
-                count = 1;
-            }
-            else if(ptr->second.Remaining_Time > 0)
-            {
-                
-                std::multimap<int,process> :: iterator ptr1;
-                for(ptr1 = tempQ.begin(); (ptr1 != tempQ.end()); ptr1++)
-                {
-                    if(ptr1 != ptr)
-                    {
-                        if(ptr1->second.inProcessQueue == true)
-                        {
-                            ptr1->second.Waiting_Time += ptr->second.Remaining_Time;
-                            time += ptr->second.Remaining_Time;
-                        }
-                        checkProcess(tempQ);
-                    }
-                }
-                ptr->second.Remaining_Time = 0;
-                count = 1;
-            }
-            else
-            {
-                continue;
-            }
-
-        }
-        else
-        {
-            continue;
-        }
-        print(tempQ);
-    } 
-    if(count == 0)
-    time++;
-}
-
-int sum(std::multimap<int,process, std::greater <int> > &tempQ)
-{
-    int sum = 0;
-    std::multimap<int,process> :: iterator ptr;
-    for(ptr = tempQ.begin(); ptr != tempQ.end(); ptr++)
-    {
-        sum += ptr->second.Remaining_Time;
+        std::cout<<" \t"<<ptr->process_no<<"\t"<<ptr->Remaining_Time<<" \t" <<ptr->Waiting_Time<<std::endl;
     }
-    return sum;
-
 }
-
-
-
-
 
 int main()
 {
     printf("Enter the number of process \n");
-    scanf(" %d",&num);
-    printf("Enter time quantum\n");
-    scanf("%d",&quantum);
+    scanf(" %d",&NUM);
+    printf("Enter time QUANTUM\n");
+    scanf("%d",&QUANTUM);
     struct process p[1000];
-    //std::vector<process> ready_queue;
+    std::vector<process> ready_queue;
+    std::vector<process> final_queue;
     std::multimap<int,process, std::greater <int> > process_queue;
-    for(int i=0;i<num;i++)
+
+    for(int i=0;i<NUM;i++)
     {
         printf("\n Enter the burst time and arrival time of process[%d] ",i+1);
         scanf("%d %d",&p[i].Burst_Time,&p[i].arrivalTime);
         p[i].Remaining_Time = p[i].Burst_Time;
         p[i].Waiting_Time = 0;
         p[i].priority = 0;
-        process_queue.insert(std::pair<int,process>(p[i].priority,p[i]));
+        p[i].process_no = i+1;
+        ready_queue.push_back(p[i]);
     }
-
-    checkProcess(process_queue);
-
+    print(ready_queue);
+    ToprocessQueue(process_queue,ready_queue);
     print(process_queue);
     do
     {
-        RoundRobin_Schedular(process_queue);
-        checkProcess(process_queue);
+        RoundRobin_Schedular(process_queue,ready_queue,final_queue);
+        ToFinalQueue(process_queue,final_queue);
         print(process_queue);
-    } while (sum(process_queue));
-
-
+        std::cout<<final_queue.size()<<std::endl;
+        std::cout<<process_queue.size();
+        std::cout<<std::endl<<TIME<<std::endl;
+		/*char c;
+        std::cin>>c;*/
+    } while (final_queue.size() != NUM);
 }
+
