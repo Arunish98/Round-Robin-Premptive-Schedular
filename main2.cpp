@@ -138,15 +138,50 @@ void print(std::multimap<int,process, std::greater <int> > &tempQ)
 
 void print(std::vector<process> &tempQ)
 {
-    std::cout<<" ready queue or final "<<std::endl;
     std::vector<process> :: iterator ptr;
-    std::cout<<"Remaining Time\t"<<" Waiting Time"<<std::endl;
+    std::cout<<"\t"<<"Process No\t"<<"Priority \t Arrival Time \t Burst Time"<<"\t Waiting Time\t Turnaround Time"<<std::endl;
 	for(ptr = tempQ.begin(); ptr != tempQ.end(); ptr++)
     {
     	
-        std::cout<<" \t"<<ptr->process_no<<"\t"<<ptr->Remaining_Time<<" \t" <<ptr->Waiting_Time<<std::endl;
+        std::cout<<" \t"<<ptr->process_no<<"\t\t"<<ptr->priority<<"\t\t"<<ptr->arrivalTime<<"\t\t"<<ptr->Burst_Time<<" \t\t" <<ptr->Waiting_Time<<" \t\t" <<ptr->Turnaround_Time<<std::endl;
     }
 }
+
+void Calculate_Turnaround(std::vector<process> &final_queue)
+{
+    std::vector<process>::iterator ptr;
+    for(ptr = final_queue.begin(); ptr != final_queue.end();ptr++)
+    {
+        ptr->Turnaround_Time = ptr->Waiting_Time + ptr->Burst_Time; 
+    }
+}
+
+
+float Calculate_Average_Waiting(std::vector<process> &final_queue)
+{
+    int avg=0;
+    std::vector<process>::iterator ptr;
+    for(ptr = final_queue.begin(); ptr != final_queue.end();ptr++)
+    {
+        avg += ptr->Waiting_Time; 
+    }
+    float avgf = (float)avg/NUM;
+    return avgf;
+}
+
+
+float Calculate_Average_Turnaround(std::vector<process> &final_queue)
+{
+    int avg=0;
+    std::vector<process>::iterator ptr;
+    for(ptr = final_queue.begin(); ptr != final_queue.end();ptr++)
+    {
+        avg += ptr->Turnaround_Time; 
+    }
+    float avgf = (float)avg/NUM;
+    return avgf;
+}
+
 
 int main()
 {
@@ -170,17 +205,18 @@ int main()
     }
     print(ready_queue);
     ToprocessQueue(process_queue,ready_queue);
-    print(process_queue);
     do
     {
         RoundRobin_Schedular(process_queue,ready_queue,final_queue);
         ToFinalQueue(process_queue,final_queue);
-        print(process_queue);
-        std::cout<<final_queue.size()<<std::endl;
-        std::cout<<process_queue.size();
-        std::cout<<std::endl<<TIME<<std::endl;
-		/*char c;
-        std::cin>>c;*/
     } while (final_queue.size() != NUM);
+
+
+    Calculate_Turnaround(final_queue);
+    float Average_Turnaround = Calculate_Average_Turnaround(final_queue);
+    float Average_Waiting = Calculate_Average_Waiting(final_queue);
     print(final_queue);
+    printf("average Turnaround Time =%f ",Average_Turnaround);
+    printf("average Waiting Time =%f ",Average_Waiting);
+
 }
